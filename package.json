@@ -1,0 +1,17 @@
+{
+  "name": "myownmusicbot",
+  "version": "1.0.0",
+  "description": "A asdasd ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "author": "Tomato#6966",
+  "license": "ISC",
+  "dependencies": {
+    "@discordjs/opus": "^0.3.3",
+    "discord.js": "^12.4.1",
+    "distube": "^2.7.0"
+  }
+}
