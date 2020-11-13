@@ -50,4 +50,6 @@ You can always Support me by inviting one of my **own Discord Bots**
 
 *Both bots are still in Development, and will always be in development, this means always uptodate and always online and always improving!*
 
+*Musicium 2 offically launched, invite now: [click here](2.musicium.eu)*
+
 [![](https://cdn.discordapp.com/emojis/770098066552258611.png)](https://cdn.discordapp.com/emojis/770098066552258611.png) 
