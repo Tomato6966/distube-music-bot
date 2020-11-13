@@ -55,12 +55,11 @@ client.on("message", message => {
         return distube.setVolume(message, args[0]);
     } 
     if (command === "queue" || command === "qu"){
-        
         let queue = distube.getQueue(message);
- 
-        return  embedbuilder(client, message, "GREEN", "Current Queue!", queue.songs.map((song, id)=>{
-            `**${id + 1}.** [\`${song.name}\`](${song.url})  -  **\`${song.formattedDuration}\`**`
-        }).join("\n"))
+        let curqueue = queue.songs.map((song, id) =>
+        `**${id + 1}**. ${song.name} - \`${song.formattedDuration}\``
+        ).join("\n");
+        return  embedbuilder(client, message, "GREEN", "Current Queue!", curqueue)
     }
     if (command === "loop" || command === "repeat"){
         if(0 <= Number(args[0]) && Number(args[0]) <= 2){
@@ -72,15 +71,17 @@ client.on("message", message => {
         }
     }
     if ( command === "jump"){
-        if(0 <= Number(args[0]) && Number(args[0]) <= distube.getQueue(message).length){
+        let queue = distube.getQueue(message);
+        if(0 <= Number(args[0]) && Number(args[0]) <= queue.songs.length){
             embedbuilder(client, message, "RED", "ERROR", `Jumped ${parseInt(args[0])} songs!`)
             return distube.jump(message, parseInt(args[0]))
             .catch(err => message.channel.send("Invalid song number."));
         }
         else{
-            embedbuilder(client, message, "RED", "ERROR", `Please use a number between **0** and **${distube.getQueue(message).length}**   |   *(0: disabled, 1: Repeat a song, 2: Repeat all the queue)*`)
+            embedbuilder(client, message, "RED", "ERROR", `Please use a number between **0** and **${DisTube.getQueue(message).length}**   |   *(0: disabled, 1: Repeat a song, 2: Repeat all the queue)*`)
         }
 
+    
     }
 
 })
