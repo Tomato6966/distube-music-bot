@@ -10,7 +10,7 @@ An advanced Music Bot based on distube.js.org
 You can always [invite](dc.musicium.eu) the Bot to your Server if you wish, its public and you can use it! with filters custom prefix all streaming plattforms supported and more!
 
 
-**NO API-KEY NEEDED!** That's because it uses a scraper (`youtube-sr`)!
+**NO API-KEY NEEDED!** That's because it uses a scraper (`distube (ytdl)`)!
 
 ## Installation | How to use the Bot
 
@@ -20,7 +20,7 @@ You can always [invite](dc.musicium.eu) the Bot to your Server if you wish, its 
 
  **3.** Download this repo and unzip it    |    or git clone it
  
- **4.** Install all of the packages with **`npm install`**     |  the packages are   **`npm install node.js @discordjs/opus discord.js distube`**
+ **4.** Install all of the packages with **`npm install`**     |  the packages are   **`npm install node.js @discordjs/opus discord.js distube quick.db`**
  
  **5.** start the bot with **`node index.js`**
 
