@@ -39,7 +39,6 @@ client.on("ready", () => {
             client.user.setActivity(`${client.guilds.cache.reduce((c, g) => c + g.memberCount, 0)} User | ${client.guilds.cache.size} Server`, { type: "PLAYING" });
     }, (5000));
 })
-
 client.on("message", async message => {
     if (message.author.bot) { return; }
     if (!message.guild) return;
@@ -50,6 +49,14 @@ client.on("message", async message => {
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift();
 
+    if (message.content.startsWith(prefix)){
+        let emojis = ["🟢","🟩","✅","☑️", "💚", "👌", "👍", "💪"];
+        let random = getRandomInt(8);
+        message.react(emojis[random]);
+    }
+    else{
+        return;
+    }
     if (command === "help") {
         embedbuilder(client, message, "#c219d8", "Commands:", `
         Prefix is: \`?\` change with: \`?prefix <NEW PREFIX>\`
@@ -187,6 +194,7 @@ client.on("message", async message => {
     }
     else if (command === "stop" || command === "leave") {
         embedbuilder(client, message, "RED", "STOPPED!", `Leaved the channel`)
+
         return distube.stop(message);
     }
     else if (command === "seek") {
@@ -206,7 +214,7 @@ client.on("message", async message => {
         let queue = distube.getQueue(message);
 
         let curqueue = queue.songs.map((song, id) =>
-            `**${id + 1}**. ${song.name} - \`${song.formattedDuration}\``
+            {if(id>20) return; `**${id + 1}**. ${song.name} - \`${song.formattedDuration}\``}
         ).join("\n");
 
         return embedbuilder(client, message, "#c219d8", "Current Queue!", curqueue)
@@ -256,7 +264,7 @@ distube
         return embedbuilder(client, message, "#c219d8", "Added a Song!", `Song: [\`${song.name}\`](${song.url})  -  \`${song.formattedDuration}\` \n\nRequested by: ${song.user} \n\nVolume: \`${queue.volume} %\`\nLoop: \`${queue.repeatMode ? "On" : "Off"}\`\nAutoplay: \`${queue.autoplay ? "On" : "Off"}\`\nFilter: \`${queue.filter || "OFF"}\`\nEstimated Time: ${queue.songs.length - 1} Song(s)\`${durationformat}\`\nQueue duration: \`${queue.formattedDuration}\``, song.thumbnail)
     })
     .on("playList", (message, queue, playlist, song) => {
-        embedbuilder(client, message, "#c219d8", "Playling playlist", `Playlist: [\`${playlist.title}\`](${playlist.url})  -  \`${playlist.total_items} songs\` \n\nRequested by: ${song.user}\n\nstarting playing Song: \`${song.name}\`  -  \`${song.formattedDuration}\`\n${status(queue)}`, playlist.thumbnail)
+        embedbuilder(client, message, "#c219d8", "Playling playlist", `Playlist: [\`${playlist.title ? playlist.title : "playlist.title" }\`](${playlist.url})  -  \`${playlist.total_items} songs\` \n\nRequested by: ${song.user}\n\nstarting playing Song: \`${song.name}\`  -  \`${song.formattedDuration}\`\n${status(queue)}`, playlist.thumbnail)
     })
     .on("addList", (message, queue, playlist, song) => {
         embedbuilder(client, message, "#c219d8", "Added a Playling!", `Playlist: [\`${playlist.title}\`](${playlist.url})  -  \`${playlist.total_items} songs\` \n\nRequested by: ${song.user}`, playlist.thumbnail)
@@ -266,15 +274,26 @@ distube
         embedbuilder(client, message, "#c219d8", "", `**Choose an option from below**\n${result.map(song => `**${++i}**. [${song.name}](${song.url}) - \`${song.formattedDuration}\``).join("\n")}\n*Enter anything else or wait 60 seconds to cancel*`)
     })
     .on("searchCancel", (message) => {
+        try{
+            message.reactions.removeAll();
+            message.react("❗️")
+        }catch{
+        }
         embedbuilder(client, message, "RED", `Searching canceled`, "")
     })
     .on("error", (message, err) => {
+        try{
+            message.reactions.removeAll();
+            message.react("❗️")
+        }catch{
+        }
         embedbuilder(client, message, "RED", "An error encountered:", err)
     })
     .on("finish", message => {
         embedbuilder(client, message, "RED", "LEFT THE CHANNEL", "There are no more songs left")
     })
     .on("empty", message => {
+        
         embedbuilder(client, message, "RED", "Left the channel cause it got empty!")
     })
     .on("noRelated", message => {
@@ -297,3 +316,6 @@ function embedbuilder(client, message, color, title, description, thumbnail) {
     if (thumbnail) embed.setThumbnail(thumbnail)
     return message.channel.send(embed);
 }
+function getRandomInt(max) {
+    return Math.floor(Math.random() * Math.floor(max));
+  }
