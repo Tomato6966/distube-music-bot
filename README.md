@@ -7,7 +7,7 @@
 
 An advanced Music Bot based on distube.js.org
 
-You can always [invite](dc.musicium.eu) the Bot to your Server if you wish, its public and you can use it!
+You can always [invite](dc.musicium.eu) the Bot to your Server if you wish, its public and you can use it! with filters custom prefix all streaming plattforms supported and more!
 
 
 **NO API-KEY NEEDED!** That's because it uses a scraper (`youtube-sr`)!
