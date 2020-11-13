@@ -28,7 +28,7 @@ You can always [invite](dc.musicium.eu) the Bot to your Server if you wish, its 
 
 ## **Video:**
 
-[![]()](https://youtu.be/lzZU-8FU2wQ "")
+[![](http://img.youtube.com/vi/lzZU-8FU2wQ/0.jpg)](http://www.youtube.com/watch?v=lzZU-8FU2wQ "")
 
 
 ## **NOTE:**
