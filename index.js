@@ -9,6 +9,7 @@ const config = {
 const distube = new DisTube(client, {
     searchSongs: true, emitNewSongOnly: true, highWaterMark: 1 << 50, leaveOnEmpty: true, leaveOnFinish: true, leaveOnStop: true, searchSongs: false, customFilters:
     {
+        "clear": "dynaudnorm=f=200",
         "bassboost": "bass=g=20,dynaudnorm=f=200",
         "8d": "apulsator=hz=0.08",
         "vaporwave": "aresample=48000,asetrate=48000*0.8",
@@ -19,7 +20,7 @@ const distube = new DisTube(client, {
     }
 })
 const db = require('quick.db');
-const filters = ["3d", "bassboost", "echo", "karaoke", "nightcore", "vaporwave", "flanger", "subboost"];
+const filters = ["clear", "3d", "bassboost", "echo", "karaoke", "nightcore", "vaporwave", "flanger", "subboost"];
 
 
 //events
@@ -39,6 +40,7 @@ client.on("ready", () => {
             client.user.setActivity(`${client.guilds.cache.reduce((c, g) => c + g.memberCount, 0)} User | ${client.guilds.cache.size} Server`, { type: "PLAYING" });
     }, (5000));
 })
+const radio = require("./radio");
 client.on("message", async message => {
     if (message.author.bot) { return; }
     if (!message.guild) return;
@@ -57,12 +59,16 @@ client.on("message", async message => {
     else{
         return;
     }
+    if (command === "radio"){
+       return radio(client, message, args);
+    }
     if (command === "help") {
         embedbuilder(client, message, "#c219d8", "Commands:", `
         Prefix is: \`?\` change with: \`?prefix <NEW PREFIX>\`
 
         \`${prefix}help\`   --  Gives you a list of all Commands  --  Aliases: \`h\`
         \`${prefix}play <URL/NAME>\`   --  Plays a song  --  Aliases: \`p\`
+        \`${prefix}radio [radiostation]\`   --  Plays a radiostation  --  Aliases: \` \`
         \`${prefix}prefix <PREFIX>\`   --  Changes the prefix  --  Aliases: \` \`
         \`${prefix}search <URL/NAME>\`   --  Searches for top 15 results  --  Aliases: \` \`
         \`${prefix}status\`   --  Shows queue status  --  Aliases: \` \`
@@ -87,8 +93,8 @@ client.on("message", async message => {
         \`${prefix}vaporwave\`   --  Changes filter to vaporwave
         \`${prefix}flanger\`   --  Changes filter to flanger
         \`${prefix}subboost\`   --  Changes filter to subboost
-
-        Supported sources: youtube, soundcloud, spotify...
+        \`${prefix}clear\`   --  Changes filter to clear
+        Supported sources: youtube, soundcloud, ...
         Bot by: Tomato#6966  [Server](https://discord.com/invite/fqBPdXBHwV)  [Musicium](https://musicium.eu)
         `)
         return;
@@ -185,15 +191,15 @@ client.on("message", async message => {
         return embedbuilder(client, message, `sBLUE`, `PING:`, `\`${client.ws.ping} ms\``)
     }
     else if (command === "play" || command === "p") {
-        embedbuilder(client, message, "#c219d8", "Searching!", args.join(" "))
+        embedbuilder(client, message, "#c219d8", "Searching!", args.join(" ")).then(msg => msg.delete({timeout: 5000}).catch(console.error))
         return distube.play(message, args.join(" "));
     }
     else if (command === "skip" || command === "s") {
-        embedbuilder(client, message, "#c219d8", "SKIPPED!", `Skipped the song`)
+        embedbuilder(client, message, "#c219d8", "SKIPPED!", `Skipped the song`).then(msg => msg.delete({timeout: 5000}).catch(console.error))
         return distube.skip(message);
     }
     else if (command === "stop" || command === "leave") {
-        embedbuilder(client, message, "RED", "STOPPED!", `Leaved the channel`)
+        embedbuilder(client, message, "RED", "STOPPED!", `Left the channel`).then(msg => msg.delete({timeout: 5000}).catch(console.error))
 
         return distube.stop(message);
     }
@@ -211,13 +217,49 @@ client.on("message", async message => {
         return distube.setVolume(message, args[0]);
     }
     else if (command === "queue" || command === "qu") {
+
+        let currentPage = 0;
         let queue = distube.getQueue(message);
+        const embeds = QueueEmbed(message, queue.songs);
+        const queueEmbed = await message.channel.send(`
+        **Current Page - ${currentPage + 1}/${embeds.length}**`,
+        embeds[currentPage]);
 
-        let curqueue = queue.songs.map((song, id) =>
-            {if(id>20) return; `**${id + 1}**. ${song.name} - \`${song.formattedDuration}\``}
-        ).join("\n");
+        try{
+            await queueEmbed.react("⬅️");
+            await queueEmbed.react("⏹");
+            await queueEmbed.react("➡️");
+        }catch (error){
+            console.error(error)
+            message.channel.send(error.message).catch(console.error);
+        }
+        
+        const filter = (reaction, user)=>
+        ["⬅️", "⏹", "➡️"].includes(reaction.emoji.name) && message.author.id === user.id;
+        const collector = queueEmbed.createReactionCollector(filter, {time: 60000});
 
-        return embedbuilder(client, message, "#c219d8", "Current Queue!", curqueue)
+        collector.on("collect",async (reaction, user) =>{
+            try{
+                if (reaction.emoji.name === "➡️") {
+                    if (currentPage < embeds.length - 1) {
+                      currentPage++;
+                      queueEmbed.edit(`**Current Page - ${currentPage + 1}/${embeds.length}**`, embeds[currentPage]);
+                    }
+                  } else if (reaction.emoji.name === "⬅️") {
+                    if (currentPage !== 0) {
+                      --currentPage;
+                      queueEmbed.edit(`**Current Page - ${currentPage + 1}/${embeds.length}**`, embeds[currentPage]);
+                    }
+                  } else {
+                    collector.stop();
+                    reaction.message.reactions.removeAll();
+                  }
+                  await reaction.users.remove(message.author.id);
+            }catch (error){
+                console.error(error)
+                message.channel.send(error.message).catch(console.error);
+            }
+        })
     }
     else if (command === "loop" || command === "repeat") {
         if (0 <= Number(args[0]) && Number(args[0]) <= 2) {
@@ -250,58 +292,121 @@ client.on("message", async message => {
 const status = (queue) => `Volume: \`${queue.volume}\` | Filter: \`${queue.filter || "OFF"}\` | Loop: \`${queue.repeatMode ? queue.repeatMode === 2 ? "All Queue" : "This Song" : "Off"}\` | Autoplay: \`${queue.autoplay ? "On" : "Off"}\``
 //distube
 distube
-    .on("playSong", (message, queue, song) => {
+    .on("playSong", async (message, queue, song) => {
+       
+    try{
+        var playingMessage = await embedbuilder(client, message, "#c219d8", "Playing new Song!", `Song: [\`${song.name}\`](${song.url})  -  \`${song.formattedDuration}\` \n\nRequested by: ${song.user}\n\nVolume: \`${queue.volume} %\`\nLoop: \`${queue.repeatMode ? "On" : "Off"}\`\nAutoplay: \`${queue.autoplay ? "On" : "Off"}\`\nFilter: \`${queue.filter || "OFF"}\``, song.thumbnail)
+        await playingMessage.react("⏭");
+        await playingMessage.react("⏹");
+        await playingMessage.react("🔉");
+        await playingMessage.react("🔊");
+        await playingMessage.react("◀️");
+        await playingMessage.react("▶️");
+    }
+    catch{
+        console.error(error);
+    }
+    const filter = (reaction, user)=>
+    ["⏭", "⏹", "🔉", "🔊", "◀️", "▶️"].includes(reaction.emoji.name) && user.id !== message.client.user.id;
+    var collector = playingMessage.createReactionCollector(filter, {
+      time: song.duration > 0 ? song.duration * 1000 : 600000
+    });
+    collector.on("collect", (reaction, user) => {
+        if(!queue) return;
+        const member = message.guild.member(user);
+        if(member.voice.connection && member.voice.connection !== member.guild.me.voice.connection) return;
+        switch(reaction.emoji.name){
+            case "⏭":
+                reaction.users.remove(user).catch(console.error);       
+                embedbuilder(client, message, "#c219d8", "SKIPPED!", `Skipped the song`).then(msg => msg.delete({timeout: 3000}).catch(console.error))
+                distube.skip(message);
+            break;
 
-        return embedbuilder(client, message, "#c219d8", "Playing new Song!", `Song: [\`${song.name}\`](${song.url})  -  \`${song.formattedDuration}\` \n\nRequested by: ${song.user}\n\nVolume: \`${queue.volume} %\`\nLoop: \`${queue.repeatMode ? "On" : "Off"}\`\nAutoplay: \`${queue.autoplay ? "On" : "Off"}\`\nFilter: \`${queue.filter || "OFF"}\``, song.thumbnail)
+            case "⏹":
+                reaction.users.remove(user).catch(console.error);       
+                embedbuilder(client, message, "RED", "STOPPED!", `Left the channel`).then(msg => msg.delete({timeout: 3000}).catch(console.error))
+                distube.stop(message);
+            break;
+
+            case "🔉":
+                reaction.users.remove(user).catch(console.error);       
+                distube.setVolume(message, Number(queue.volume)-10);
+                embedbuilder(client, message, "#c219d8", "Volume!", `Redused the Volume to \`${queue.volume}\``).then(msg => msg.delete({timeout: 3000}).catch(console.error))
+            break;
+
+            case "🔊":
+                reaction.users.remove(user).catch(console.error);       
+                distube.setVolume(message, Number(queue.volume)+10);
+                embedbuilder(client, message, "#c219d8", "Volume!", `Raised the Volume to \`${queue.volume}\``).then(msg => msg.delete({timeout: 3000}).catch(console.error))
+            break;
+
+            case "◀️":
+                reaction.users.remove(user).catch(console.error);       
+                embedbuilder(client, message, "#c219d8", "Seeked!", `Seeked the song for \`-10 seconds\``).then(msg => msg.delete({timeout: 3000}).catch(console.error))
+                return distube.seek(message, Number(-10000));
+            break;
+
+            case "▶️":
+                reaction.users.remove(user).catch(console.error);       
+                embedbuilder(client, message, "#c219d8", "Seeked!", `Seeked the song for \`+10 seconds\``).then(msg => msg.delete({timeout: 3000}).catch(console.error))
+                return distube.seek(message, Number(10000));
+            break;
+
+            default:
+            reaction.users.remove(user).catch(console.error);    
+            break;
+        }
+    });
+    collector.on("end", ()=>{
+        playingMessage.reactions.removeAll().catch(console.error);
+        playingMessage.delete({timeout: client.ws.ping}).catch(console.error);
+    })
+
     })
     .on("addSong", (message, queue, song) => {
-        console.log(queue.duration);
-        console.log(song.duration);
 
-        let round = Math.floor((queue.duration - song.duration) / 60 * 100) / 100;
-        console.log(round)
-        let durationformat = round.toString().replace(".", ": ");
-        return embedbuilder(client, message, "#c219d8", "Added a Song!", `Song: [\`${song.name}\`](${song.url})  -  \`${song.formattedDuration}\` \n\nRequested by: ${song.user} \n\nVolume: \`${queue.volume} %\`\nLoop: \`${queue.repeatMode ? "On" : "Off"}\`\nAutoplay: \`${queue.autoplay ? "On" : "Off"}\`\nFilter: \`${queue.filter || "OFF"}\`\nEstimated Time: ${queue.songs.length - 1} Song(s)\`${durationformat}\`\nQueue duration: \`${queue.formattedDuration}\``, song.thumbnail)
+        return embedbuilder(client, message, "#c219d8", "Added a Song!", `Song: [\`${song.name}\`](${song.url})  -  \`${song.formattedDuration}\` \n\nRequested by: ${song.user} \n\nVolume: \`${queue.volume} %\`\nLoop: \`${queue.repeatMode ? "On" : "Off"}\`\nAutoplay: \`${queue.autoplay ? "On" : "Off"}\`\nFilter: \`${queue.filter || "OFF"}\`\nEstimated Time: ${queue.songs.length - 1} Song(s)\`${(Math.floor((queue.duration - song.duration) / 60 * 100) / 100).toString().replace(".", ":")}\`\nQueue duration: \`${queue.formattedDuration}\``, song.thumbnail)
     })
     .on("playList", (message, queue, playlist, song) => {
-        embedbuilder(client, message, "#c219d8", "Playling playlist", `Playlist: [\`${playlist.title ? playlist.title : "playlist.title" }\`](${playlist.url})  -  \`${playlist.total_items} songs\` \n\nRequested by: ${song.user}\n\nstarting playing Song: \`${song.name}\`  -  \`${song.formattedDuration}\`\n${status(queue)}`, playlist.thumbnail)
+        return embedbuilder(client, message, "#c219d8", "Playling playlist", `Playlist: [\`${playlist.title}\`](${playlist.url})  -  \`${playlist.total_items} songs\` \n\nRequested by: ${song.user}\n\nstarting playing Song: \`${song.name}\`  -  \`${song.formattedDuration}\`\n${status(queue)}`, playlist.thumbnail)
     })
     .on("addList", (message, queue, playlist, song) => {
-        embedbuilder(client, message, "#c219d8", "Added a Playling!", `Playlist: [\`${playlist.title}\`](${playlist.url})  -  \`${playlist.total_items} songs\` \n\nRequested by: ${song.user}`, playlist.thumbnail)
+        return embedbuilder(client, message, "#c219d8", "Added a Playling!", `Playlist: [\`${playlist.title}\`](${playlist.url})  -  \`${playlist.total_items} songs\` \n\nRequested by: ${song.user}`, playlist.thumbnail)
     })
     .on("searchResult", (message, result) => {
         let i = 0;
-        embedbuilder(client, message, "#c219d8", "", `**Choose an option from below**\n${result.map(song => `**${++i}**. [${song.name}](${song.url}) - \`${song.formattedDuration}\``).join("\n")}\n*Enter anything else or wait 60 seconds to cancel*`)
+        return embedbuilder(client, message, "#c219d8", "", `**Choose an option from below**\n${result.map(song => `**${++i}**. [${song.name}](${song.url}) - \`${song.formattedDuration}\``).join("\n")}\n*Enter anything else or wait 60 seconds to cancel*`)
     })
     .on("searchCancel", (message) => {
         try{
             message.reactions.removeAll();
-            message.react("❗️")
+            message.react("❌")
         }catch{
         }
-        embedbuilder(client, message, "RED", `Searching canceled`, "")
+        return embedbuilder(client, message, "RED", `Searching canceled`, "").then(msg => msg.delete({timeout: 5000}).catch(console.error))
     })
     .on("error", (message, err) => {
         try{
             message.reactions.removeAll();
-            message.react("❗️")
+            message.react("❌")
         }catch{
         }
-        embedbuilder(client, message, "RED", "An error encountered:", err)
+        return embedbuilder(client, message, "RED", "An error encountered:", err)
     })
     .on("finish", message => {
-        embedbuilder(client, message, "RED", "LEFT THE CHANNEL", "There are no more songs left")
+        return embedbuilder(client, message, "RED", "LEFT THE CHANNEL", "There are no more songs left").then(msg => msg.delete({timeout: 5000}).catch(console.error))
     })
     .on("empty", message => {
         
-        embedbuilder(client, message, "RED", "Left the channel cause it got empty!")
+        return embedbuilder(client, message, "RED", "Left the channel cause it got empty!").then(msg => msg.delete({timeout: 5000}).catch(console.error))
     })
     .on("noRelated", message => {
-        embedbuilder(client, message, "RED", "Can't find related video to play. Stop playing music.")
+        return embedbuilder(client, message, "RED", "Can't find related video to play. Stop playing music.").then(msg => msg.delete({timeout: 5000}).catch(console.error))
     })
     .on("initQueue", queue => {
         queue.autoplay = false;
         queue.volume = 69;
+        queue.filter = filters[0];
     });
 
 //function embeds
@@ -319,3 +424,24 @@ function embedbuilder(client, message, color, title, description, thumbnail) {
 function getRandomInt(max) {
     return Math.floor(Math.random() * Math.floor(max));
   }
+
+function QueueEmbed(message, queue){
+     let embeds = [];
+     let k = 10;
+
+     for( let i = 0; i< queue.length; i += 10)
+     {
+         const current = queue.slice(i, k)
+         let j = i;
+         k += 10;
+         const info = current.map((track) => `${++j} - [${track.name}](${track.url})` ).join("\n")
+         const embed = new Discord.MessageEmbed()
+         .setTitle("Current Queue")
+         .setColor("#c219d8")
+         .setDescription(`**Current Song - [${queue[0].name}](${queue[0].url})**\n\n${info}`)
+         .setFooter(client.user.username, client.user.displayAvatarURL())
+         embeds.push(embed);
+     }
+
+     return embeds;
+}
