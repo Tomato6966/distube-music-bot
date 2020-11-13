@@ -24,7 +24,7 @@ You can always [invite](dc.musicium.eu) the Bot to your Server if you wish, its 
  
  **5.** start the bot with **`node index.js`**
 
-```
+
 
 ## **Video:**
 
