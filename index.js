@@ -2,7 +2,6 @@
 //configuration//
 /////////////////
 const Discord = require("discord.js");
-const db = require('quick.db');
 const { getLyrics } = require('genius-lyrics-api');
 const DisTube = require("distube");
 const radio = require("./radio");
