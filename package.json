@@ -10,8 +10,10 @@
   "author": "Tomato#6966",
   "license": "ISC",
   "dependencies": {
-    "@discordjs/opus": "^0.3.3",
+       "@discordjs/opus": "^0.3.3",
     "discord.js": "^12.4.1",
-    "distube": "^2.7.0"
+    "distube": "^2.8.2",
+    "enmap": "^5.8.2",
+    "genius-lyrics-api": "^3.0.3"
   }
 }
