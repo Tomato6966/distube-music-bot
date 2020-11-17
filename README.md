@@ -20,7 +20,7 @@ You can always [invite](dc.musicium.eu) the Bot to your Server if you wish, its 
 
  **3.** Download this repo and unzip it    |    or git clone it
  
- **4.** Install all of the packages with **`npm install`**     |  the packages are   **`npm install node.js @discordjs/opus discord.js distube quick.db`**
+ **4.** Install all of the packages with **`npm install`**     |  the packages are   **`npm install node.js @discordjs/opus discord.js distube enmap`**
  
  **5.** start the bot with **`node index.js`**
 
