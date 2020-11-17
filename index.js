@@ -11,9 +11,15 @@ const config = {
     token: "NzQ4MDk2MTcwNjk3NTU1OTY5.X0Yc2g.pLoDQa1J_aUi8O2_Pwo9ov_pyQo",
     geniusapi: ''
 }
+
+const Enmap = require("enmap")
+
 const client = new Discord.Client({ disableMentions: "all" });
+
+client.settings = new Enmap({ name: "settings" }); //For ranking system
+
 const distube = new DisTube(client, {
-    youtubeCookie: "YOUR-COOKIE-HERE",  //OR DELETE IT ITS ALSO OKAY
+    youtubeCookie: "Your cookie must go here !!!", 
     searchSongs: true, 
     emitNewSongOnly: true, 
     highWaterMark: 50 * 1024 * 1024, 
@@ -107,7 +113,12 @@ client.on("message", async message => {
     if (message.author.bot) return; //if a bot return 
     if (!message.guild) return;     //if not in a guild return
     
-    let prefix = await db.get(`prefix_${message.guild.id}`)//getting prefix 
+    client.settings.ensure(message.guild.id, {
+        prefix: "+"
+      });
+
+    let prefix = client.settings.get(message.guild.id, `prefix`);
+    
     if (prefix === null) prefix = config.PREFIX;           //if not prefix set it to standard prefix in the config.json file
     
     const args = message.content.slice(prefix.length).trim().split(/ +/g); //arguments of the content
@@ -185,7 +196,11 @@ try{
     }
     else if (command === "prefix") {
 
-        let prefix = await db.get(`prefix_${message.guild.id}`)
+        client.settings.ensure(message.guild.id, {
+            prefix: "+"
+          });
+
+        let prefix = client.settings.get(message.guild.id, `prefix`);
 
         if (prefix === null) prefix = config.PREFIX;
 
@@ -199,7 +214,7 @@ try{
 
         if (args[1]) return embedbuilder(client, message, "RED", "PREFIX", `'❌ The prefix can\'t have two spaces'`)
 
-        db.set(`prefix_${message.guild.id}`, args[0])
+        client.settings.set(message.guild.id, args[0], `prefix`);
 
         return embedbuilder(client, message, "#c219d8", "PREFIX", `✅ Successfully set new prefix to **\`${args[0]}\`**`)
     }
