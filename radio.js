@@ -3,7 +3,6 @@
   ////////////////////////////
   const { MessageEmbed } = require("discord.js");
   const Discord = require("discord.js");
-  const db = require('quick.db');
   //all radio stations
   const Radiostations = [
     "Standard-Radio https://streams.ilovemusic.de/iloveradio14.mp3",
@@ -54,8 +53,13 @@
   //////COMMAND BEGIN/////////
   ////////////////////////////
   module.exports = async function (client, message, args) {
-    let prefix = await db.get(`prefix_${message.guild.id}`)
-    if(prefix === null) prefix = "!!!";
+   
+    client.settings.ensure(message.guild.id, {
+      prefix: "+"
+    });
+
+    let prefix = client.settings.get(message.guild.id, `prefix`);
+    if(prefix === null) prefix = "+";
 
     //define the No args Embed, lmao
     let resultsEmbed = new Discord.MessageEmbed()
